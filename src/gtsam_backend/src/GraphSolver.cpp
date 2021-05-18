@@ -1,6 +1,7 @@
 #include <math.h>
 #include <ros/ros.h>
 
+#include "ConstraintZ.h"
 #include "GraphSolver.h"
 
 
@@ -49,6 +50,13 @@ void GraphSolver::addmeasurement_uv(double timestamp, std::vector<uint> leftids,
 
       // Original models
       gtsam::State newstate = get_predicted_state(values_initial);
+
+      gtsam::SharedDiagonal model = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector1() << 0.05).finished());
+
+      // Constrain the robot z coordinate to be around 0
+      ConstraintZ simpleConstraint(X(ct_state+1), 0.0, model);
+      graph_new->add(simpleConstraint);
+      graph->add(simpleConstraint);
 
       // Move node count forward in time
       ct_state++;

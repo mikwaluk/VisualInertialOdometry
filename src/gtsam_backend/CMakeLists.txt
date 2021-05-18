@@ -154,6 +154,7 @@ add_executable(vio
   src/GraphSolver.cpp
   src/GraphSolver_IMU.cpp
   src/GraphSolver_FEAT.cpp
+  src/ConstraintZ.cpp
   )
 
 ## Rename C++ executable without prefix
