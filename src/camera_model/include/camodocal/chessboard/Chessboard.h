@@ -1,8 +1,12 @@
 #ifndef CHESSBOARD_H
 #define CHESSBOARD_H
 
+#include <opencv2/calib3d/calib3d_c.h>
 #include <boost/shared_ptr.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgcodecs/legacy/constants_c.h>
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
 
 namespace camodocal
 {

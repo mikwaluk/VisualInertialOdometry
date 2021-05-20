@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(gtsam_backend)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+SET(MKL_INCLUDE_DIR /usr/include/mkl)
 
 find_package(PCL REQUIRED)
 find_package(Boost REQUIRED timer)
