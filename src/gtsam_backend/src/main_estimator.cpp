@@ -14,7 +14,12 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf/transform_broadcaster.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/PointStamped.h>
+#include <tf2_ros/buffer_interface.h>
+
+#include <tf2_ros/message_filter.h>
 
 #include "GraphSolver.h"
 #include "utils/Config.h"
@@ -44,7 +49,7 @@ int poses_seq = 0;
 int skip = 0;
 
 tf2_ros::Buffer tfBuffer;
-tf2_ros::TransformListener tfListener(tfBuffer);
+tf2_ros::TransformListener* tfListener;
 
 int main(int argc, char** argv) {
   
@@ -179,6 +184,7 @@ void setup_subpub(ros::NodeHandle& nh) {
     // Feature cloud visualization
     pubFeatureCloud = nh.advertise<sensor_msgs::PointCloud2>("vio/feature_cloud", 2);
     ROS_INFO("Publishing: %s", pubFeatureCloud.getTopic().c_str());
+    tfListener = new  tf2_ros::TransformListener (tfBuffer);
 
 }
 
@@ -249,18 +255,29 @@ void publish_state(double timestamp, gtsam::State& state) {
     Eigen::Matrix<double, 6, 6> covariance = Eigen::Matrix<double,6,6>::Zero();
     ToPoseWithCovariance(state.pose(), covariance, pose.pose);
 
-    static tf::TransformBroadcaster br;
-    gtsam::Point3 tr_gtsam(state.pose().translation());
-    tf::Transform transform;
-    transform.setOrigin(tf::Vector3(tr_gtsam.x(), tr_gtsam.y(), tr_gtsam.z()));
-    
-    gtsam::Quaternion q_gtsam(state.pose().rotation().toQuaternion());
-    tf::Quaternion q(q_gtsam.x(), q_gtsam.y(), q_gtsam.z(), q_gtsam.w());
-    transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
-
     // Publish this pose
     pubPoseIMU.publish(pose);
+    geometry_msgs::TransformStamped imuToBase;
+    try
+    {
+      imuToBase = tfBuffer.lookupTransform("imu_link", "base_link", ros::Time(0));
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("%s",ex.what());
+      ros::Duration(1.0).sleep();
+      return;
+    }
+    // Transform pose from IMU to base_link and animate the car model
+    static tf::TransformBroadcaster br;
+    //pose.header.frame_id = "world";
+    tf::Transform transform;
+    //tf2::doTransform(pose, pose, imuToBase);
+    const geometry_msgs::Point position(pose.pose.pose.position);
+    transform.setOrigin(tf::Vector3(position.x, position.y, position.z));
+    const geometry_msgs::Quaternion q = pose.pose.pose.orientation;
+    transform.setRotation(tf::Quaternion(q.x, q.y, q.z, q.w));
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
+
 }
 
 void publish_trajectory(double timestamp, Trajectory& trajectory) {

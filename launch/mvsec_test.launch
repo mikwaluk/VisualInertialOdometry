@@ -6,9 +6,15 @@
     <arg name="rvizfile"    default = "$(find gtsam_backend)/../../rviz/mvsec_test.rviz" />
     <arg name="config_path" default = "$(find gtsam_backend)/../../config/mvsec_vins_config.yaml" />
     <arg name="vins_folder" default = "$(find feature_tracker)/../" />
+    <arg name="model" default="$(find gtsam_backend)/../../rviz/simple_car_model.urdf"/>
 
     <!-- RVIZ -->
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rvizfile)"/>
+
+    <!-- Car model -->
+    <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 
     <!-- FRONT END! -->
     <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="log">
