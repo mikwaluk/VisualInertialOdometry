@@ -55,8 +55,8 @@ void GraphSolver::addmeasurement_uv(double timestamp, std::vector<uint> leftids,
 
       // Constrain the robot z coordinate to be around 0
       ConstraintZ simpleConstraint(X(ct_state+1), 0.0, model);
-      graph_new->add(simpleConstraint);
-      graph->add(simpleConstraint);
+      //graph_new->add(simpleConstraint);
+      //graph->add(simpleConstraint);
 
       // Move node count forward in time
       ct_state++;

@@ -13,6 +13,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include "GraphSolver.h"
 #include "utils/Config.h"
@@ -40,6 +42,9 @@ Config* config;
 GraphSolver* graphsolver;
 int poses_seq = 0;
 int skip = 0;
+
+tf2_ros::Buffer tfBuffer;
+tf2_ros::TransformListener tfListener(tfBuffer);
 
 int main(int argc, char** argv) {
   
@@ -243,7 +248,17 @@ void publish_state(double timestamp, gtsam::State& state) {
     pose.header.frame_id = config->fixedId;
     Eigen::Matrix<double, 6, 6> covariance = Eigen::Matrix<double,6,6>::Zero();
     ToPoseWithCovariance(state.pose(), covariance, pose.pose);
+
+    static tf::TransformBroadcaster br;
+    gtsam::Point3 tr_gtsam(state.pose().translation());
+    tf::Transform transform;
+    transform.setOrigin(tf::Vector3(tr_gtsam.x(), tr_gtsam.y(), tr_gtsam.z()));
     
+    gtsam::Quaternion q_gtsam(state.pose().rotation().toQuaternion());
+    tf::Quaternion q(q_gtsam.x(), q_gtsam.y(), q_gtsam.z(), q_gtsam.w());
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
+
     // Publish this pose
     pubPoseIMU.publish(pose);
 }

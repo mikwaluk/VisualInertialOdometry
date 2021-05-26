@@ -10,6 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  tf
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+  tf2_sensor_msgs
 )
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
