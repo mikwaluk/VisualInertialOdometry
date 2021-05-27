@@ -198,6 +198,10 @@ void handle_measurement_imu(const sensor_msgs::ImuConstPtr& msg) {
     Eigen::Vector4d orientation;
     orientation << msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w;
 
+    Eigen::Quaterniond extrinsicCalibrationQuat(0.9984396, -0.0435928, -0.0015223, -0.0348663);
+    Eigen::Transform<double,3,Eigen::Affine> extrinsicCalibrationTransform(extrinsicCalibrationQuat);
+    angularvelocity = extrinsicCalibrationTransform * angularvelocity;
+    linearacceleration = extrinsicCalibrationTransform * linearacceleration;
     // Send to graph solver
     graphsolver->addmeasurement_imu(msg->header.stamp.toSec(), linearacceleration, angularvelocity, orientation);
 }
