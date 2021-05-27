@@ -6,6 +6,11 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Grid1
+        - /RobotModel1
+        - /RobotModel1/Links1
+        - /RobotModel1/Links1/base_link1
+        - /RobotModel1/Links1/imu_link1
       Splitter Ratio: 0.5
     Tree Height: 392
   - Class: rviz/Selection
@@ -35,7 +40,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 10
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -49,7 +54,7 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
       Value: true
     - Alpha: 1
@@ -96,7 +101,7 @@ Visualization Manager:
         Y: 0
         Z: 0
       Pose Color: 255; 85; 255
-      Pose Style: None
+      Pose Style: Axes
       Queue Size: 10
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
@@ -116,7 +121,7 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
-    - Alpha: 1
+    - Alpha: 0.5
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -138,7 +143,7 @@ Visualization Manager:
           Value: true
         base_link:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         camera_link:
@@ -163,7 +168,7 @@ Visualization Manager:
           Value: true
         imu_link:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         world:
@@ -204,7 +209,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 72.97183990478516
+      Distance: 49.767452239990234
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -212,17 +217,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 17.873952865600586
-        Y: -40.73100280761719
-        Z: -34.44474411010742
-      Focal Shape Fixed Size: true
+        X: -0.43465399742126465
+        Y: 0.2580694556236267
+        Z: 0.28692665696144104
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6547967791557312
+      Pitch: 0.5103986859321594
       Target Frame: <Fixed Frame>
-      Yaw: 1.9653912782669067
+      Yaw: 1.005397915840149
     Saved: ~
 Window Geometry:
   Displays:
