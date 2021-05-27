@@ -257,25 +257,35 @@ void publish_state(double timestamp, gtsam::State& state) {
 
     // Publish this pose
     pubPoseIMU.publish(pose);
-    geometry_msgs::TransformStamped imuToBase;
+
+    geometry_msgs::TransformStamped worldToImu;
+    geometry_msgs::TransformStamped baseToImu;
     try
     {
-      imuToBase = tfBuffer.lookupTransform("imu_link", "base_link", ros::Time(0));
+      worldToImu = tfBuffer.lookupTransform("imu_link", "world", ros::Time(0));
+      baseToImu = tfBuffer.lookupTransform("imu_link", "base_link", ros::Time(0));
     }
     catch (tf2::TransformException &ex) {
       ROS_WARN("%s",ex.what());
       ros::Duration(1.0).sleep();
       return;
     }
+
     // Transform pose from IMU to base_link and animate the car model
-    static tf::TransformBroadcaster br;
-    //pose.header.frame_id = "world";
+    Eigen::Vector3d imuInWorldPos(pose.pose.pose.position.x, pose.pose.pose.position.y, pose.pose.pose.position.z);
+    Eigen::Quaterniond baseToImuQuat(baseToImu.transform.rotation.w, baseToImu.transform.rotation.x,
+                                     baseToImu.transform.rotation.y, baseToImu.transform.rotation.z);
+    Eigen::Quaterniond imuInWorldQuat(pose.pose.pose.orientation.w, pose.pose.pose.orientation.x,
+                                      pose.pose.pose.orientation.y, pose.pose.pose.orientation.z);
+    Eigen::Quaterniond baseInWorldQuat = imuInWorldQuat * baseToImuQuat;
+    Eigen::Vector3d baseToImuPos(baseToImu.transform.translation.x, baseToImu.transform.translation.y,
+                                 baseToImu.transform.translation.z);
+    Eigen::Vector3d baseInWorldPos = imuInWorldPos + imuInWorldQuat.toRotationMatrix() * baseToImuPos;
     tf::Transform transform;
-    //tf2::doTransform(pose, pose, imuToBase);
-    const geometry_msgs::Point position(pose.pose.pose.position);
-    transform.setOrigin(tf::Vector3(position.x, position.y, position.z));
-    const geometry_msgs::Quaternion q = pose.pose.pose.orientation;
-    transform.setRotation(tf::Quaternion(q.x, q.y, q.z, q.w));
+    transform.setOrigin(tf::Vector3(baseInWorldPos.x(), baseInWorldPos.y(), baseInWorldPos.z()));
+    transform.setRotation(tf::Quaternion(baseInWorldQuat.x(), baseInWorldQuat.y(), baseInWorldQuat.z(),
+                                         baseInWorldQuat.w()));
+    static tf::TransformBroadcaster br;
     br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
 
 }
