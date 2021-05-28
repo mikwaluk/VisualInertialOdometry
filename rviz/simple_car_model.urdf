@@ -37,8 +37,8 @@
     <child link="glass_upper_part"/>
     <origin xyz="0.3 0 0.975" rpy="0 0 0" /> 
   </joint>
-  <!-- IMU -->
-  <link name="imu_link">
+  <!-- imu_base - -->
+  <link name="imu0">
     <visual>
       <origin xyz="0 0 0" />
       <geometry>
@@ -46,7 +46,7 @@
       </geometry>
     </visual>
   </link>
-  <link name="camera_link">
+  <link name="cam0">
     <visual>
       <origin xyz="0 0 0" />
       <geometry>
@@ -56,12 +56,12 @@
   </link>
   <joint name="joint_imu" type="fixed">
     <parent link="glass_upper_part"/>
-    <child link="imu_link"/>
+    <child link="imu0"/>
     <origin xyz="0 0 0" rpy="1.570795 0 1.570795" /> 
   </joint>
   <joint name="joint_camera" type="fixed">
-    <parent link="imu_link"/>
-    <child link="camera_link"/>
+    <parent link="imu0"/>
+    <child link="cam0"/>
     <origin xyz="0.039 -0.006 0" rpy="0 0 0" /> 
   </joint>
   <!-- Front Right Wheel -->

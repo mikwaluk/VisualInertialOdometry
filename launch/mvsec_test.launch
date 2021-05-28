@@ -39,19 +39,20 @@
       <rosparam param="p_IinC0">[-0.03921656415229387,   0.00621263233002485,   0.0012210059575531885]</rosparam>
 
       <!-- Initialization -->
-      <rosparam param="prior_qGtoI">[0.716147, 0.051158, 0.133778, 0.683096]</rosparam>       
-      <rosparam param="prior_pIinG">[0.925493, -6.214668, 0.422872]</rosparam>       
-      <rosparam param="prior_vIinG">[1.128364, -2.280640, 0.213326]</rosparam>       
+      <rosparam param="prior_qGtoI">[0.653, 0.271, 0.271, 0.653]</rosparam>       <!-- was [0.707, 0.0, 0.0, 0.707] or [0.716147, 0.051158, 0.133778, 0.683096]-->
+      <rosparam param="prior_pIinG">[0.0, 0.0, 0.0]</rosparam>    <!-- [0.925493, -6.214668, 0.422872]-->   
+      <rosparam param="prior_vIinG">[0.0, 0.0, 0.0]</rosparam>       <!-- was [1.128364, -2.280640, 0.213326]-->
       <rosparam param="prior_ba">[0.00489771688759235973,  0.00800897351104824969, 0.03020588299505782420]</rosparam>       
       <rosparam param="prior_bg">[-0.00041196751646696610, 0.00992948457018005999, 0.02188282212555122189]</rosparam>       
+      <rosparam param="extrinsic_imu_rpy_deg">[-3.0, 0.0, -4.0]</rosparam>  <!-- [-3.0, 0.0, -4.0]-->
 
       <param name="sigma_camera"                 type="double"   value="0.306555403" />
       
       <!-- Noise Values for ETH Dataset Sensor -->
       <param name="accelerometer_noise_density"  type="double"   value="0.08" />    <!-- sigma_a -->
       <param name="gyroscope_noise_density"      type="double"   value="0.004" />   <!-- sigma_g -->
-      <param name="accelerometer_random_walk"    type="double"   value="0.00004" /> <!-- sigma_wa -->
-      <param name="gyroscope_random_walk"        type="double"   value="2.0e-6" />  <!-- sigma_wg -->
+      <param name="accelerometer_random_walk"    type="double"   value="0.004" /> <!-- sigma_wa 0.00004-->
+      <param name="gyroscope_random_walk"        type="double"   value="2.0e-4" />  <!-- sigma_wg  2.0e-6"-->
 
       <!-- Noise Values for Initialization -->
       <param name="sigma_prior_rotation"         type="double"   value="0.1" />

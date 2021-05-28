@@ -1,19 +1,24 @@
 
 #include "GraphSolver.h"
 
+#include <ros/ros.h>
+
 void GraphSolver::process_feat_smart(double timestamp, std::vector<uint> leftids, std::vector<Eigen::Vector2d> leftuv) {
 
     //==============================================================================
     // Loop through LEFT features
+    size_t size = leftids.size(), found = 0;
     for(size_t i=0; i<leftids.size(); i++) {
 
         // Check to see if it is already in the graph
         if(measurement_smart_lookup_left.find(leftids.at(i)) != measurement_smart_lookup_left.end()) {
             // Insert measurements to a smart factor
             measurement_smart_lookup_left[leftids.at(i)]->add(gtsam::Point2(leftuv.at(i)), X(ct_state));
+            found++;
+            ROS_INFO_STREAM("Found id: " << leftids.at(i));
             continue;
         }
-
+        ROS_INFO_STREAM("New id: " << leftids.at(i));
         // If we know it is not in the graph
         // Create a smart factor for the new feature
         gtsam::noiseModel::Isotropic::shared_ptr measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, config->sigma_camera);
@@ -31,5 +36,6 @@ void GraphSolver::process_feat_smart(double timestamp, std::vector<uint> leftids
         graph_new->push_back(smartfactor_left);
         graph->push_back(smartfactor_left);
     }
+    //ROS_INFO_STREAM("Features: " << size << " found: " << found);
 }
 

@@ -26,6 +26,7 @@ public:
   Eigen::Matrix<double, 3, 1, Eigen::DontAlign> prior_vIinG;
   Eigen::Matrix<double, 3, 1, Eigen::DontAlign> prior_ba;
   Eigen::Matrix<double, 3, 1, Eigen::DontAlign> prior_bg;
+  Eigen::Quaterniond extrinsic_calibration_quat;
   
   /// Noise values for the image
   double sigma_camera; ///< Noise value for CAMERA points
