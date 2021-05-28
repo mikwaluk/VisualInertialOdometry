@@ -18,6 +18,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/PointStamped.h>
 #include <tf2_ros/buffer_interface.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 #include <tf2_ros/message_filter.h>
 
@@ -112,6 +113,14 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     nh.param<std::vector<double>>("prior_bg", prior_bg, prior_bg);
     for (size_t i = 0; i < 3; ++i) config->prior_bg(i) = prior_bg.at(i);
 
+    std::vector<double> extrinsic_imu_rpy_deg = {0, 0, 0}; 
+    nh.param<std::vector<double>>("extrinsic_imu_rpy_deg", extrinsic_imu_rpy_deg, extrinsic_imu_rpy_deg);
+    Eigen::Quaterniond q;
+    config->extrinsic_calibration_quat =
+      Eigen::AngleAxisd(extrinsic_imu_rpy_deg.at(0) * M_PI / 180.0, Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(extrinsic_imu_rpy_deg.at(1) * M_PI / 180.0, Eigen::Vector3d::UnitY()) *
+      Eigen::AngleAxisd(extrinsic_imu_rpy_deg.at(2) * M_PI / 180.0, Eigen::Vector3d::UnitZ());
+
     // Read in our CAMERA noise values
     nh.param<double>("sigma_camera", config->sigma_camera, 1.0/484.1316);
     config->sigma_camera_sq = std::pow(config->sigma_camera, 2);
@@ -148,6 +157,9 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     std::cout << "\t- prior_p_IinG: " << std::endl << config->prior_pIinG.transpose() << std::endl;
     std::cout << "\t- prior_ba: "     << std::endl << config->prior_ba.transpose() << std::endl;
     std::cout << "\t- prior_bg: "     << std::endl << config->prior_bg.transpose() << std::endl;
+    std::cout << "\t- extrinsic_calibration_quat: "     << std::endl << config->extrinsic_calibration_quat.w() << ","
+              << config->extrinsic_calibration_quat.x() << "," << config->extrinsic_calibration_quat.y() << ","
+              << config->extrinsic_calibration_quat.z() << std::endl;
    
     std::cout << "Noise Parameters:" << std::endl;
     std::cout << "\t- sigma_camera:  " << config->sigma_camera << std::endl;
@@ -197,9 +209,8 @@ void handle_measurement_imu(const sensor_msgs::ImuConstPtr& msg) {
     angularvelocity << msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
     Eigen::Vector4d orientation;
     orientation << msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w;
-
-    Eigen::Quaterniond extrinsicCalibrationQuat(0.9984396, -0.0435928, -0.0015223, -0.0348663);
-    Eigen::Transform<double,3,Eigen::Affine> extrinsicCalibrationTransform(extrinsicCalibrationQuat);
+    
+    Eigen::Transform<double,3,Eigen::Affine> extrinsicCalibrationTransform(config->extrinsic_calibration_quat);
     angularvelocity = extrinsicCalibrationTransform * angularvelocity;
     linearacceleration = extrinsicCalibrationTransform * linearacceleration;
     // Send to graph solver
@@ -266,8 +277,8 @@ void publish_state(double timestamp, gtsam::State& state) {
     geometry_msgs::TransformStamped baseToImu;
     try
     {
-      worldToImu = tfBuffer.lookupTransform("imu_link", "world", ros::Time(0));
-      baseToImu = tfBuffer.lookupTransform("imu_link", "base_link", ros::Time(0));
+      worldToImu = tfBuffer.lookupTransform("imu0", "world", ros::Time(0));
+      baseToImu = tfBuffer.lookupTransform("imu0", "base_link", ros::Time(0));
     }
     catch (tf2::TransformException &ex) {
       ROS_WARN("%s",ex.what());
@@ -327,6 +338,7 @@ void publish_cloud(double timestamp) {
 
     // Loop through and create a point cloud
     std::vector<Eigen::Vector3d> points = graphsolver->get_current_features();
+    ROS_INFO_STREAM("Features: " << points.size());
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud <pcl::PointXYZ>);
     for (size_t i = 0; i < points.size(); ++i) {
         pcl::PointXYZ pt;

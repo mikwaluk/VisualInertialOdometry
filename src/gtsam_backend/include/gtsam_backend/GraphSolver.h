@@ -17,6 +17,8 @@
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 
+#include <ros/ros.h>
+
 #include "utils/Config.h"
 #include "utils/State.h"
 
@@ -100,9 +102,13 @@ public:
       std::vector<Eigen::Vector3d> features;
       // Else loop through the features and return them
       for (auto element : measurement_smart_lookup_left) {
-       boost::optional<gtsam::Point3> point = element.second->point(values_initial);
+       gtsam::TriangulationResult point = element.second->point(values_initial);
        if (point)
          features.push_back(*point);
+       else
+       {
+         //ROS_INFO_STREAM("Status: " << point);
+       }
       }
       return features;
   }
