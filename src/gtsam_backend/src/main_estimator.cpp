@@ -229,14 +229,17 @@ void handle_measurement_uv(const sensor_msgs::PointCloudConstPtr& msg) {
     // Feature measurements
     std::vector<uint> leftids;
     std::vector<Eigen::Vector2d> leftuv;
-
+    Eigen::Transform<double,3,Eigen::Affine> extrinsicCalibrationTransform(config->extrinsic_calibration_quat);
     // Loop through LEFT features and append
     for(size_t i = 0; i < msg->points.size(); ++i) {
         int v = msg->channels[0].values[i] + 0.5;
         int id = v / 1;
         leftids.push_back((uint)id);
+        Eigen::Vector3d uv3d;
+        uv3d << msg->points[i].x, msg->points[i].y, msg->points[i].z;
+        //uv3d = extrinsicCalibrationTransform * uv3d;
         Eigen::Vector2d uv;
-        uv << msg->points[i].x, msg->points[i].y;
+        uv << uv3d.x(), uv3d.y();
         leftuv.push_back(uv);
     }
 
