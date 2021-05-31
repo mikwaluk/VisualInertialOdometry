@@ -83,7 +83,25 @@ void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
     {
         ROS_DEBUG("processing camera %d", i);
         if (i != 1 || !STEREO_TRACK)
-            trackerData[i].readImage(ptr->image.rowRange(ROW * i, ROW * (i + 1)), img_msg->header.stamp.toSec());
+        {
+        //First load your source image, here load as gray scale
+            cv::Mat srcImage = ptr->image.rowRange(ROW * i, ROW * (i + 1));
+
+            //Then define your mask image
+            cv::Mat mask = cv::Mat::zeros(srcImage.size(), srcImage.type());
+            cv::Mat dstImage = cv::Mat::zeros(srcImage.size(), srcImage.type());  
+            //Define your destination image
+            //cv::Mat dstImage = cv::Mat::zeros(srcImage.size(), srcImage.type());    
+
+            //I assume you want to draw the circle at the center of your image, with a radius of 50
+            cv::rectangle(mask, cv::Point(mask.cols/3, 0), cv::Point(2*mask.cols/3, mask.rows), cv::Scalar(255, 0, 0), -1, 8, 0);
+            //cv::circle(mask, cv::Point(mask.cols/2, mask.rows/2), 100, cv::Scalar(255, 0, 0), -1, 8, 0);
+            mask = cv::Mat::ones(mask.size(), mask.type()) * 255 - mask;
+            cv::blur(mask, mask, cv::Size(20,20));
+            //Now you can copy your source image to destination image with masking
+            srcImage.copyTo(dstImage, mask);
+            trackerData[i].readImage(dstImage, img_msg->header.stamp.toSec());
+        }
         else
         {
             if (EQUALIZE)
