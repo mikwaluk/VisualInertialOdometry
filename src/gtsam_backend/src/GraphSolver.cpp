@@ -54,7 +54,7 @@ void GraphSolver::addmeasurement_uv(double timestamp, std::vector<uint> leftids,
       gtsam::SharedDiagonal model = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector1() << 1.0).finished());
 
       // Constrain the robot z coordinate to be around 0
-      ConstraintZ simpleConstraint(X(ct_state+1), 0.0, model);
+      //ConstraintZ simpleConstraint(X(ct_state+1), 0.0, model);
       //graph_new->add(simpleConstraint);
       //graph->add(simpleConstraint);
 
@@ -72,6 +72,10 @@ void GraphSolver::addmeasurement_uv(double timestamp, std::vector<uint> leftids,
       // Add ct state to map
       ct_state_lookup[timestamp] = ct_state;
       timestamp_lookup[ct_state] = timestamp;
+      //newTimestamps[ct_state] = timestamp;
+      newTimestamps[X(ct_state)] = timestamp;
+      newTimestamps[V(ct_state)] = timestamp;
+      newTimestamps[B(ct_state)] = timestamp;
   }
 
   // Assert our vectors are equal (note will need to remove top one eventually)
@@ -92,8 +96,21 @@ void GraphSolver::optimize() {
 
   // Perform smoothing update
   try {
-    gtsam::ISAM2Result result = isam2->update(*graph_new, values_new);
+    ROS_INFO_STREAM("Printing the new timestamps");
+    for(auto it = newTimestamps.cbegin(); it != newTimestamps.cend(); ++it)
+    {
+       ROS_INFO_STREAM("Key: " << it->first << "Time: " << it->second);
+    }
+    gtsam::FixedLagSmoother::Result result = isam2->update(*graph_new, values_new, newTimestamps);
+    result.print();
     values_initial = isam2->calculateEstimate();
+    //ROS_INFO_STREAM("isam2 timestamps. Current timestamp: " << isam2->getCurrentTimestamp());
+    ROS_INFO_STREAM("Timestamps within the graph");
+    for(const gtsam::FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp: isam2->timestamps())
+    {
+      ROS_INFO_STREAM("Key: " << key_timestamp.first << "  Time: " << key_timestamp.second);
+    }
+    const gtsam::NonlinearFactorGraph & factorGraph = isam2->getFactors();
   } catch(gtsam::IndeterminantLinearSystemException &e) {
       ROS_ERROR("FORSTER2 gtsam indeterminate linear system exception!");
       std::cerr << e.what() << std::endl;
@@ -105,6 +122,8 @@ void GraphSolver::optimize() {
 
   // Remove the used up factors
   graph_new->resize(0);
+
+  newTimestamps.clear();
 
   // reset imu preintegration
   reset_imu_integration();
@@ -153,6 +172,10 @@ void GraphSolver::initialize(double timestamp) {
   // Add ct state to map
   ct_state_lookup[timestamp] = ct_state;
   timestamp_lookup[ct_state] = timestamp;
+  //newTimestamps[ct_state] = timestamp;
+  newTimestamps[X(ct_state)] = timestamp;
+  newTimestamps[V(ct_state)] = timestamp;
+  newTimestamps[B(ct_state)] = timestamp;
 
   // Clear all old imu messages (keep the last two)
   imu_times.erase(imu_times.begin(), imu_times.end() - 1);

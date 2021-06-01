@@ -10,6 +10,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
 
 // Factors
 #include <gtsam/slam/PriorFactor.h>
@@ -45,7 +47,9 @@ public:
     isam_params.cacheLinearizedFactors = false;
     isam_params.enableDetailedResults = true;
     isam_params.print();
-    this->isam2 = new gtsam::ISAM2(isam_params);
+    double lag = 2.0;
+    this->isam2 = new gtsam::BatchFixedLagSmoother(lag);
+    newTimestamps = gtsam::FixedLagSmoother::KeyTimestampMap();
   }
 
   /// Will return true if the system is initialized
@@ -151,7 +155,7 @@ private:
   gtsam::Values values_initial;
 
   // ISAM2 solvers
-  gtsam::ISAM2* isam2;
+  gtsam::BatchFixedLagSmoother* isam2;
 
   // Current ID of state and features
   size_t ct_state = 0;
@@ -162,6 +166,7 @@ private:
 
   std::unordered_map<double, size_t> ct_state_lookup; // ct state based on timestamp
   std::unordered_map<size_t, double> timestamp_lookup;
+  gtsam::FixedLagSmoother::KeyTimestampMap newTimestamps;
 
   // IMU data from the sensor
   std::mutex imu_mutex;

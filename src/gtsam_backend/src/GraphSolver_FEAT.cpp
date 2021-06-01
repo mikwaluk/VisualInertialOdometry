@@ -15,10 +15,10 @@ void GraphSolver::process_feat_smart(double timestamp, std::vector<uint> leftids
             // Insert measurements to a smart factor
             measurement_smart_lookup_left[leftids.at(i)]->add(gtsam::Point2(leftuv.at(i)), X(ct_state));
             found++;
-            ROS_INFO_STREAM("Found id: " << leftids.at(i));
+            //ROS_INFO_STREAM("Found id: " << leftids.at(i));
             continue;
         }
-        ROS_INFO_STREAM("New id: " << leftids.at(i));
+        //ROS_INFO_STREAM("New id: " << leftids.at(i));
         // If we know it is not in the graph
         // Create a smart factor for the new feature
         gtsam::noiseModel::Isotropic::shared_ptr measurementNoise = gtsam::noiseModel::Isotropic::Sigma(2, config->sigma_camera);
