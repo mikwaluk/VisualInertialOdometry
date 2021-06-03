@@ -3,6 +3,7 @@
 
 #include "ConstraintZ.h"
 #include "GraphSolver.h"
+#include "JPLNavStatePrior.h"
 
 
 void GraphSolver::addmeasurement_imu(double timestamp, Eigen::Vector3d linacc, Eigen::Vector3d angvel, Eigen::Vector4d orientation) {
@@ -44,12 +45,12 @@ void GraphSolver::addmeasurement_uv(double timestamp, std::vector<uint> leftids,
   } else {
 
       // Forster2 discrete preintegration
-      gtsam::CombinedImuFactor imuFactor = create_imu_factor(timestamp, values_initial);
+      ImuFactorCPIv2 imuFactor = createimufactor_cpi_v2(timestamp, values_initial);
       graph_new->add(imuFactor);
       graph->add(imuFactor);
 
       // Original models
-      gtsam::State newstate = get_predicted_state(values_initial);
+      JPLNavState newstate = getpredictedstate_v2(imuFactor, values_initial);
 
       gtsam::SharedDiagonal model = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector1() << 1.0).finished());
 
@@ -62,20 +63,20 @@ void GraphSolver::addmeasurement_uv(double timestamp, std::vector<uint> leftids,
       ct_state++;
 
       // Append to our node vectors
-      values_new.insert(    X(ct_state), newstate.pose());
-      values_new.insert(    V(ct_state), newstate.v());
-      values_new.insert(    B(ct_state), newstate.b());
-      values_initial.insert(X(ct_state), newstate.pose());
-      values_initial.insert(V(ct_state), newstate.v());
-      values_initial.insert(B(ct_state), newstate.b());
+      values_new.insert(    X(ct_state), newstate);
+      //values_new.insert(    V(ct_state), newstate.v());
+      //values_new.insert(    B(ct_state), newstate.b());
+      values_initial.insert(X(ct_state), newstate);
+      //values_initial.insert(V(ct_state), newstate.v());
+      //values_initial.insert(B(ct_state), newstate.b());
 
       // Add ct state to map
       ct_state_lookup[timestamp] = ct_state;
       timestamp_lookup[ct_state] = timestamp;
       //newTimestamps[ct_state] = timestamp;
       newTimestamps[X(ct_state)] = timestamp;
-      newTimestamps[V(ct_state)] = timestamp;
-      newTimestamps[B(ct_state)] = timestamp;
+      //newTimestamps[V(ct_state)] = timestamp;
+      //newTimestamps[B(ct_state)] = timestamp;
   }
 
   // Assert our vectors are equal (note will need to remove top one eventually)
@@ -130,7 +131,7 @@ void GraphSolver::optimize() {
 }
 
 void GraphSolver::initialize(double timestamp) {
-    
+  ROS_INFO_STREAM("initialize");
   // If we have already initialized, then just return
   if (systeminitalized)
     return;
@@ -151,31 +152,30 @@ void GraphSolver::initialize(double timestamp) {
                                           v_IinG, gtsam::Bias(ba, bg)); // gtsam::Quaternion(w, x, y, z)
   auto pose_noise = gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) << gtsam::Vector3::Constant(config->sigma_prior_rotation),
                                                          gtsam::Vector3::Constant(config->sigma_prior_translation)).finished());
+  ROS_INFO_STREAM("LINE 155");
   auto v_noise = gtsam::noiseModel::Isotropic::Sigma(3, config->sigma_velocity);
   auto b_noise = gtsam::noiseModel::Isotropic::Sigma(6, config->sigma_bias);
-
-  graph_new->add(gtsam::PriorFactor<gtsam::Pose3>(  X(ct_state), prior_state.pose(), pose_noise));
-  graph_new->add(gtsam::PriorFactor<gtsam::Vector3>(V(ct_state), prior_state.v(),    v_noise));
-  graph_new->add(gtsam::PriorFactor<gtsam::Bias>(   B(ct_state), prior_state.b(),    b_noise));
-  graph->add(gtsam::PriorFactor<gtsam::Pose3>(      X(ct_state), prior_state.pose(), pose_noise));
-  graph->add(gtsam::PriorFactor<gtsam::Vector3>(    V(ct_state), prior_state.v(),    v_noise));
-  graph->add(gtsam::PriorFactor<gtsam::Bias>(       B(ct_state), prior_state.b(),    b_noise));
-
+  Eigen::Matrix<double,15,15> cov = Eigen::Matrix<double,15,15>::Zero();
+  cov.block(0, 0, 3, 3) = config->sigma_prior_rotation * Eigen::Matrix3d::Identity();
+  cov.block(3, 3, 3, 3) = config->sigma_prior_translation * Eigen::Matrix3d::Identity();
+  cov.block(6, 6, 3, 3) = config->sigma_velocity * Eigen::Matrix3d::Identity();
+  cov.block(9, 9, 6, 6) = config->sigma_bias * Eigen::Matrix<double,6,6>::Identity();
+  ROS_INFO_STREAM("LINE 162");
+  JPLNavStatePrior priorfactor(X(ct_state), cov, q_GtoI, bg, v_IinG, ba, p_IinG);
+  graph_new->add(priorfactor);
+  graph->add(priorfactor);
+  ROS_INFO_STREAM("LINE 166");
   // Add initial state to the graph
-  values_new.insert(    X(ct_state), prior_state.pose());
-  values_new.insert(    V(ct_state), prior_state.v());
-  values_new.insert(    B(ct_state), prior_state.b());
-  values_initial.insert(X(ct_state), prior_state.pose());
-  values_initial.insert(V(ct_state), prior_state.v());
-  values_initial.insert(B(ct_state), prior_state.b());
+  values_new.insert(X(ct_state), JPLNavState(q_GtoI, bg, v_IinG, ba, p_IinG));
+  values_initial.insert(X(ct_state), JPLNavState(q_GtoI, bg, v_IinG, ba, p_IinG));
 
   // Add ct state to map
   ct_state_lookup[timestamp] = ct_state;
   timestamp_lookup[ct_state] = timestamp;
   //newTimestamps[ct_state] = timestamp;
   newTimestamps[X(ct_state)] = timestamp;
-  newTimestamps[V(ct_state)] = timestamp;
-  newTimestamps[B(ct_state)] = timestamp;
+  //newTimestamps[V(ct_state)] = timestamp;
+  //newTimestamps[B(ct_state)] = timestamp;
 
   // Clear all old imu messages (keep the last two)
   imu_times.erase(imu_times.begin(), imu_times.end() - 1);
@@ -183,8 +183,8 @@ void GraphSolver::initialize(double timestamp) {
   imu_angvel.erase(imu_angvel.begin(), imu_angvel.end() - 1);
   imu_orientation.erase(imu_orientation.begin(), imu_orientation.end() - 1);
 
-  if (set_imu_preintegration(prior_state))
-    systeminitalized = true;
+  //if (set_imu_preintegration(prior_state))
+  systeminitalized = true;
 
   // Debug info
   ROS_INFO("\033[0;32m[INIT]: orientation = %.4f, %.4f, %.4f, %.4f\033[0m",q_GtoI(0),q_GtoI(1),q_GtoI(2),q_GtoI(3));

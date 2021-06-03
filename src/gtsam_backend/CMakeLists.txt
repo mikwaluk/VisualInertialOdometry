@@ -160,6 +160,9 @@ add_executable(vio
   src/GraphSolver_IMU.cpp
   src/GraphSolver_FEAT.cpp
   src/ConstraintZ.cpp
+  src/ImuFactorCpiV2.cpp
+  src/JPLNavState.cpp
+  src/JPLNavStatePrior.cpp
   )
 
 ## Rename C++ executable without prefix

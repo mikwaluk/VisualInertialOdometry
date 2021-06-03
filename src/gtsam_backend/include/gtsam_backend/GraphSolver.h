@@ -23,6 +23,9 @@
 
 #include "utils/Config.h"
 #include "utils/State.h"
+#include "ImuFactorCPIv2.h"
+#include "JPLNavState.h"
+#include "CpiV2.h"
 
 using gtsam::symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using gtsam::symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
@@ -70,9 +73,9 @@ public:
     assert (ct <= ct_state);
     if (!values_initial.exists(X(ct)))
       return gtsam::State();
-    return gtsam::State(values_initial.at<gtsam::Pose3>(  X(ct)),
-                 values_initial.at<gtsam::Vector3>(V(ct)),
-                 values_initial.at<gtsam::Bias>(   B(ct)));
+    JPLNavState stateK = values_initial.at<JPLNavState>(X(ct_state));
+    gtsam::Pose3();
+    return gtsam::State(gtsam::Pose3(gtsam::Rot3(quat_2_Rot(stateK.q())), stateK.p()), stateK.v(), gtsam::Bias(stateK.ba(), stateK.bg()));
   }
 
   gtsam::State get_current_state() { 
@@ -127,9 +130,10 @@ private:
 
   // Function that will compound the GTSAM preintegrator to get discrete preintegration measurement
   gtsam::CombinedImuFactor create_imu_factor(double updatetime, gtsam::Values& values_initial);
-
+  gtsam::ImuFactorCPIv2 createimufactor_cpi_v2(double updatetime, gtsam::Values& values_initial);
   // Function will get the predicted Navigation State based on this generated measurement 
   gtsam::State get_predicted_state(gtsam::Values& values_initial);
+  JPLNavState getpredictedstate_v2(ImuFactorCPIv2& imuFactor, gtsam::Values& values_initial);
 
   // Function that will reset imu preintegration
   void reset_imu_integration();

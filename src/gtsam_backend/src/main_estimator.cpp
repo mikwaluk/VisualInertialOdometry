@@ -59,26 +59,28 @@ int main(int argc, char** argv) {
   ros::NodeHandle nhPrivate("~");
 
   config = new Config();
+  ROS_INFO_STREAM(" enter setup_config");
   setup_config(nhPrivate, config);
-  setup_subpub(nh);
+  //setup_subpub(nh);
   
   sleep(2);
-  
-  graphsolver = new GraphSolver(config);
+  ROS_INFO_STREAM("main");
+  //graphsolver = new GraphSolver(config);
 
   ros::spin();
   return EXIT_SUCCESS;
 }
 
 void setup_config(ros::NodeHandle& nh, Config* config) {
-
+    ROS_INFO_STREAM("setup_config 0");
     config->fixedId = "global";
+    ROS_INFO_STREAM("setup_config 1");
     nh.param<std::string>("fixedId", config->fixedId, config->fixedId);
     // Load global gravity
     std::vector<double> gravity = {0, 0, 9.8};
     nh.param<std::vector<double>>("gravity", gravity, gravity);
     for (size_t i = 0; i < 3; ++i) config->gravity(i, 0) = gravity.at(i);
-   
+    ROS_INFO_STREAM("setup_config 2");
     // Read in number of IMU and FEAT message we should wait to initialize from
     nh.param<int>("imuWait", config->imuWait, 300);
     nh.param<int>("featWait", config->featWait,  0);
@@ -87,7 +89,7 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     std::vector<double> R_C0toI = {1, 0, 0, 0, 1, 0, 0, 0, 1};
     nh.param<std::vector<double>>("R_C0toI", R_C0toI, R_C0toI);
     for (size_t i = 0; i < 9; ++i) config->R_C0toI(i) = R_C0toI.at(i);
-
+    ROS_INFO_STREAM("setup_config 3");
     std::vector<double> p_IinC0 = {0, 0, 0};
     nh.param<std::vector<double>>("p_IinC0", p_IinC0, p_IinC0);
     for (size_t i = 0; i < 3; ++i) config->p_IinC0(i) = p_IinC0.at(i);
@@ -96,35 +98,36 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     std::vector<double> prior_qGtoI = {0, 0, 0, 1.0};
     nh.param<std::vector<double>>("prior_qGtoI", prior_qGtoI, prior_qGtoI);
     for (size_t i = 0; i < 4; ++i) config->prior_qGtoI(i) = prior_qGtoI.at(i);
-    
+    ROS_INFO_STREAM("setup_config 3.1");
     std::vector<double> prior_pIinG = {0, 0, 0};
     nh.param<std::vector<double>>("prior_pIinG", prior_pIinG, prior_pIinG);
     for (size_t i = 0; i < 3; ++i) config->prior_pIinG(i) = prior_pIinG.at(i);
-
+    ROS_INFO_STREAM("setup_config 3.2");
     std::vector<double> prior_vIinG = {0, 0, 0};
     nh.param<std::vector<double>>("prior_vIinG", prior_vIinG, prior_vIinG);
     for (size_t i = 0; i < 3; ++i) config->prior_vIinG(i) = prior_vIinG.at(i);
-
+    ROS_INFO_STREAM("setup_config 3.3");
     std::vector<double> prior_ba = {0, 0, 0};
     nh.param<std::vector<double>>("prior_ba", prior_ba, prior_ba);
     for (size_t i = 0; i < 3; ++i) config->prior_ba(i) = prior_ba.at(i);
-
+    ROS_INFO_STREAM("setup_config 3.4");
     std::vector<double> prior_bg = {0, 0, 0};
     nh.param<std::vector<double>>("prior_bg", prior_bg, prior_bg);
     for (size_t i = 0; i < 3; ++i) config->prior_bg(i) = prior_bg.at(i);
-
+    ROS_INFO_STREAM("setup_config 3.5");
     std::vector<double> extrinsic_imu_rpy_deg = {0, 0, 0}; 
     nh.param<std::vector<double>>("extrinsic_imu_rpy_deg", extrinsic_imu_rpy_deg, extrinsic_imu_rpy_deg);
+    ROS_INFO_STREAM("setup_config 3.5.1");
     Eigen::Quaterniond q;
     config->extrinsic_calibration_quat =
       Eigen::AngleAxisd(extrinsic_imu_rpy_deg.at(0) * M_PI / 180.0, Eigen::Vector3d::UnitX()) *
       Eigen::AngleAxisd(extrinsic_imu_rpy_deg.at(1) * M_PI / 180.0, Eigen::Vector3d::UnitY()) *
       Eigen::AngleAxisd(extrinsic_imu_rpy_deg.at(2) * M_PI / 180.0, Eigen::Vector3d::UnitZ());
-
+    ROS_INFO_STREAM("setup_config 3.6");
     // Read in our CAMERA noise values
     nh.param<double>("sigma_camera", config->sigma_camera, 1.0/484.1316);
     config->sigma_camera_sq = std::pow(config->sigma_camera, 2);
-
+    ROS_INFO_STREAM("setup_config 3.7");
     // Read in our IMU noise values
     nh.param<double>("accelerometer_noise_density", config->sigma_a, 0.01);
     config->sigma_a_sq = std::pow(config->sigma_a, 2);
@@ -134,7 +137,7 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     config->sigma_wa_sq = std::pow(config->sigma_wa, 2);
     nh.param<double>("gyroscope_random_walk", config->sigma_wg, 4.0e-06);
     config->sigma_wg_sq = std::pow(config->sigma_wg, 2);
-    
+    ROS_INFO_STREAM("setup_config 3.8");
     // Read in our Initialization noise values
     nh.param<double>("sigma_prior_rotation",    config->sigma_prior_rotation, 1.0e-4);
     nh.param<double>("sigma_prior_translation", config->sigma_prior_translation, 1.0e-4);
@@ -142,7 +145,7 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     nh.param<double>("sigma_bias",              config->sigma_bias, 1.0e-4);
     nh.param<double>("sigma_pose_rotation",     config->sigma_pose_rotation, 1.0e-4);
     nh.param<double>("sigma_pose_translation",  config->sigma_pose_translation, 1.0e-4);
-
+    ROS_INFO_STREAM("setup_config 4");
     // Debug print to screen for the user
     Eigen::IOFormat CommaInitFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "[", "]");
     std::cout << "\t- fixed ID: "<< config->fixedId << std::endl;
@@ -173,6 +176,7 @@ void setup_config(ros::NodeHandle& nh, Config* config) {
     std::cout << "\t- sigma_bias: "              << config->sigma_bias << std::endl;
     std::cout << "\t- sigma_pose_rotation: "     << config->sigma_pose_rotation << std::endl;
     std::cout << "\t- sigma_pose_translation: "  << config->sigma_pose_translation << std::endl;
+    ROS_INFO_STREAM("exit setup_config");
 }
 
 void setup_subpub(ros::NodeHandle& nh) {
