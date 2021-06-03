@@ -26,10 +26,15 @@
 #include "ImuFactorCPIv2.h"
 #include "JPLNavState.h"
 #include "CpiV2.h"
+#include "utils/feature.h"
+#include "FeatureInitializer.h"
 
+#ifndef GRAPH_SOLVER_H
+#define GRAPH_SOLVER_H
 using gtsam::symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using gtsam::symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
+using gtsam::symbol_shorthand::F; // Feature
 
 typedef std::vector<std::pair<double, gtsam::State>> Trajectory;
 typedef gtsam::SmartProjectionPoseFactor<gtsam::Cal3_S2> SmartFactor;
@@ -74,7 +79,6 @@ public:
     if (!values_initial.exists(X(ct)))
       return gtsam::State();
     JPLNavState stateK = values_initial.at<JPLNavState>(X(ct_state));
-    gtsam::Pose3();
     return gtsam::State(gtsam::Pose3(gtsam::Rot3(quat_2_Rot(stateK.q())), stateK.p()), stateK.v(), gtsam::Bias(stateK.ba(), stateK.bg()));
   }
 
@@ -125,18 +129,12 @@ private:
   // Function which will try to initalize our graph using the current IMU measurements
   void initialize(double timestamp);
 
-  // ******************************* TODO ********************************* //
-  bool set_imu_preintegration(const gtsam::State& prior_state);
 
   // Function that will compound the GTSAM preintegrator to get discrete preintegration measurement
-  gtsam::CombinedImuFactor create_imu_factor(double updatetime, gtsam::Values& values_initial);
   gtsam::ImuFactorCPIv2 createimufactor_cpi_v2(double updatetime, gtsam::Values& values_initial);
   // Function will get the predicted Navigation State based on this generated measurement 
-  gtsam::State get_predicted_state(gtsam::Values& values_initial);
   JPLNavState getpredictedstate_v2(ImuFactorCPIv2& imuFactor, gtsam::Values& values_initial);
 
-  // Function that will reset imu preintegration
-  void reset_imu_integration();
 
   // Smart feature measurements
   void process_feat_smart(double timestamp, std::vector<uint> leftids, std::vector<Eigen::Vector2d> leftuv);
@@ -179,10 +177,15 @@ private:
   std::deque<Eigen::Vector3d> imu_angvel;
   std::deque<Eigen::Vector4d> imu_orientation;
 
-  // Imu Preintegration
-  gtsam::PreintegratedCombinedMeasurements* preint_gtsam;
-
   /// Lookup tables for features
   std::mutex features_mutex;
   std::unordered_map<int, SmartFactor::shared_ptr> measurement_smart_lookup_left;
 };
+
+    /// Lookup tables for features and incoming measurements
+    std::unordered_map<int, size_t> measurement_lookup; //< node ID of feature if added into graph
+    std::unordered_map<int, size_t> measurement_state_lookup; //< state ID of feature if added into graph
+    std::unordered_map<size_t, size_t> measurement_anchor_lookup; //< state ID of anchor pose based on feature ID
+    std::unordered_map<int, feature> measurement_queue; //< queue of features that have not been added
+
+#endif /* GRAPH_SOLVER_H */

@@ -49,4 +49,6 @@ public:
   double sigma_bias; // 0.1 m/s
   double sigma_pose_rotation; // 0.1 rad on roll, pitch, yaw
   double sigma_pose_translation; // 30cm std on x, y, z
+  int uvWindowSize; /// Amount of poses that we should stop updating the feature after
+  int minPoseFeatureInit; // Min number of poses to initalize a feature
 };
