@@ -13,6 +13,9 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <std_msgs/ColorRGBA.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 
 #include "GraphSolver.h"
 #include "utils/Config.h"
@@ -168,7 +171,7 @@ void setup_subpub(ros::NodeHandle& nh) {
     ROS_INFO("Publishing: %s", pubPoseIMU.getTopic().c_str());
 
     // IMU path visualization
-    pubPathIMU = nh.advertise<nav_msgs::Path>("vio/path_imu", 2);
+    pubPathIMU = nh.advertise<visualization_msgs::Marker>("vio/path_imu", 2);
     ROS_INFO("Publishing: %s", pubPathIMU.getTopic().c_str());
 
     // Feature cloud visualization
@@ -253,24 +256,31 @@ void publish_trajectory(double timestamp, Trajectory& trajectory) {
   // Return if trajectory is empty
   if (trajectory.empty())
     return;
-
-  // Create stamped pose for path publishing
-  std::vector<geometry_msgs::PoseStamped> traj_est;
-  for (auto it = trajectory.begin(); it != trajectory.end(); ++it) {
-    geometry_msgs::PoseStamped poseStamped;
-    poseStamped.header.stamp = ros::Time(it->first);
-    poseStamped.header.frame_id = config->fixedId;
-    ToPose(it->second.pose(), poseStamped.pose);
-    traj_est.push_back(poseStamped);
-  }
   
-  // Create pose arrays and publish
-  nav_msgs::Path patharr;
-  patharr.header.frame_id = config->fixedId;
-  patharr.header.stamp = ros::Time(timestamp);
-  patharr.header.seq = poses_seq++;
-  patharr.poses = traj_est;
-  pubPathIMU.publish(patharr);
+  // Create a marker for path publishing
+  visualization_msgs::Marker new_marker;
+  new_marker.id = 0;
+  new_marker.action = visualization_msgs::Marker::MODIFY;
+  new_marker.type = visualization_msgs::Marker::LINE_STRIP;
+  new_marker.scale.x = 0.5;
+  new_marker.scale.y = 0.5;
+  new_marker.scale.z = 0.5;
+  new_marker.color.r = 0.0;
+  new_marker.color.g = 1.0;
+  new_marker.color.b = 0.0;
+  new_marker.color.a = 1.0;
+  new_marker.pose.orientation.w = 1.0;
+
+  visualization_msgs::MarkerArray marker_array;
+  for (auto it = trajectory.begin(); it != trajectory.end(); ++it) {
+    
+    new_marker.header.stamp = ros::Time(it->first);
+    new_marker.header.frame_id = config->fixedId;
+    geometry_msgs::Pose new_pose;
+    ToPose(it->second.pose(),  new_pose);
+    new_marker.points.push_back(new_pose.position);
+  }
+  pubPathIMU.publish(new_marker);
 }
 
 void publish_cloud(double timestamp) {

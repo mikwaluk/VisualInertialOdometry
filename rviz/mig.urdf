@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<robot name="MIG" 
+	xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<xacro:property name="car_length" value="4.774" />
+	<!-- length of car in m -->
+	<xacro:property name="car_width" value="1.820" />
+	<!-- including odometer and side mirror -->
+	<xacro:property name="car_height" value="1.517" />
+	<!-- including velodyne -->
+	<xacro:property name="car_mass" value="2300." />
+	<!-- mass of car in kg (including sensors) -->
+	<xacro:property name="car_max_torque" value="2709" />
+	<!-- max torque of the car -->
+
+	<xacro:property name="front_axle_distance" value="0" />
+	<!-- distance from applanix reference frame to front shaft (front axle, Vorderachse) in m -->
+	<xacro:property name="rear_axle_distance" value="-2.709" />
+	<!-- distance from applanix reference frame to rear shaft (rear axle, Hinterachse) in m -->
+	<xacro:property name="shaft_distance" value="2.709" />
+	<!-- distance between front and rear shaft (Achse) -->
+
+	<xacro:property name="front_axle_to_front" value="0.965" />
+	<!-- distance from front shaft to real front of car in m -->
+	<xacro:property name="rear_axle_to_rear" value="-1.090" />
+	<!-- distance from rear shaft to real rear of car in m -->
+	<xacro:property name="applanix_to_ground" value="0" />
+	<!-- distance of applanix to ground in m -->
+	<xacro:property name="applanix_pitch" value="0" />
+	<!-- pitch of applanix reference frame in radian -->
+
+	<xacro:property name="tire_distance" value="1.551" />
+	<!-- distance between left and right tire in m -->
+	<xacro:property name="tire_stiffness" value="200000." />
+	<!--  -->
+	<xacro:property name="tire_radius" value="0.315" />
+	<!-- radius of tire in m -->
+
+	<!-- <xacro:include filename="$(find autonomos_vehicle_urdf_helpers)/urdf/xacro/fixed_part.xacro" />
+	<xacro:include filename="$(find autonomos_vehicle_urdf_helpers)/urdf/xacro/fixed_visual_part.xacro" /> -->
+
+	<xacro:macro name="fixed_part" params="name parent linktype rpy xyz">
+		<link name="${name}">
+		</link>
+		<joint name="${parent}_to_${name}" type="${linktype}">
+  			<parent link="${parent}"/>
+			<child link="${name}"/>
+			<origin rpy="${rpy}" xyz="${xyz}" />
+		</joint>
+	</xacro:macro>
+	<!-- Vehicle coordinate system origin (center of rear axle projected on ground) -->
+
+	<link name="world" />
+	<xacro:fixed_part name="odom" parent="world" linktype="fixed" rpy="0 0 0" xyz="0 0 0" />
+	<xacro:fixed_part name="base_link" parent="odom" linktype="fixed" rpy="0 0 0" xyz="0 0 0" />
+	<xacro:fixed_part name="rear_base_link" parent="base_link" linktype="fixed" rpy="0 0 0" xyz="${rear_axle_distance} 0 0" />
+
+	<!-- applanix reference frame relative to base link (sitting at the center of the front axle projected on ground) -->
+
+	<xacro:fixed_part name="applanix" parent="base_link" linktype="fixed" rpy="0 ${applanix_pitch} 0" xyz="0 0 ${applanix_to_ground}" />
+	
+	<!-- Chassis -->
+
+	<xacro:fixed_part name="chassis" parent="base_link" linktype="fixed" rpy="0 0 0" xyz="0 0 0" />
+
+	<!-- Wheels (relative to chassis) -->
+
+	<!-- <xacro:include filename="$(find autonomos_vehicle_urdf_helpers)/urdf/xacro/wheel.xacro" /> -->
+
+	<!-- <xacro:wheel name="fl" rpy="0 0 -${pi/2}" xyz="0                  +${tire_distance/2} ${tire_radius}" mesh="package://fub_mig/meshes/wheel.ac"/>
+	<xacro:wheel name="fr" rpy="0 0 +${pi/2}" xyz="0                  -${tire_distance/2} ${tire_radius}" mesh="package://fub_mig/meshes/wheel.ac" />
+	<xacro:wheel name="bl" rpy="0 0 -${pi/2}" xyz="-${shaft_distance} +${tire_distance/2} ${tire_radius}" mesh="package://fub_mig/meshes/wheel.ac"/>
+	<xacro:wheel name="br" rpy="0 0 +${pi/2}" xyz="-${shaft_distance} -${tire_distance/2} ${tire_radius}" mesh="package://fub_mig/meshes/wheel.ac" /> -->
+
+	<!-- Various positions of the vehicle's bounding box, z=0 -->
+
+	<xacro:fixed_part name="car_front_left" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${front_axle_to_front} ${car_width/2} 0"/>
+	<xacro:fixed_part name="car_front_center" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${front_axle_to_front} 0 0"/>
+	<xacro:fixed_part name="car_front_right" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${front_axle_to_front} ${-car_width/2} 0"/>
+
+	<xacro:fixed_part name="car_rear_left" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${rear_axle_distance+rear_axle_to_rear} ${car_width/2} 0"/>
+	<xacro:fixed_part name="car_rear_center" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${rear_axle_distance+rear_axle_to_rear} 0 0"/>
+	<xacro:fixed_part name="car_rear_right" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${rear_axle_distance+rear_axle_to_rear} ${-car_width/2} 0"/>
+
+	<xacro:fixed_part name="front_axle_center" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${front_axle_distance} 0 ${tire_radius}"/>
+	<xacro:fixed_part name="rear_axle_center" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${rear_axle_distance} 0 ${tire_radius}"/>
+
+	<!-- Ibeo ECU -->
+	<!-- fused pointcloud -->
+	<xacro:fixed_part name="lux" parent="chassis" linktype="fixed" rpy="0 0 0" xyz="${rear_axle_distance} 0 0" />
+	<!-- per scanner pointclouds -->
+	<xacro:fixed_part name="ibeo_scanner_1" parent="base_link" linktype="fixed" rpy="0 0 0.78" xyz="${front_axle_to_front} ${car_width/2} 0" />
+	<xacro:fixed_part name="ibeo_scanner_2" parent="base_link" linktype="fixed" rpy="0 0 0" xyz="${front_axle_to_front} 0 0" />
+	<xacro:fixed_part name="ibeo_scanner_3" parent="base_link" linktype="fixed" rpy="0 0 -0.78" xyz="${front_axle_to_front} ${-car_width/2} 0" />
+	<xacro:fixed_part name="ibeo_scanner_4" parent="base_link" linktype="fixed" rpy="0 0 3.92" xyz="${rear_axle_distance+rear_axle_to_rear} ${-car_width/2} 0" />
+	<xacro:fixed_part name="ibeo_scanner_5" parent="base_link" linktype="fixed" rpy="0 0 3.14" xyz="${rear_axle_distance+rear_axle_to_rear} 0 0" />
+	<xacro:fixed_part name="ibeo_scanner_6" parent="base_link" linktype="fixed" rpy="0 0 2.36" xyz="${rear_axle_distance+rear_axle_to_rear} ${car_width/2} 0" />
+
+	<!-- Velodyne -->
+
+	<!-- Calibrated some time ago, might have a minor error -->
+	<!-- <xacro:include filename="$(find fub_mig)/urdf/HDL-64E_S2.urdf.xacro" />
+	<HDL-64E_S2 parent="chassis" name="velodyne" topic="/sensors/velodyne_points">
+		<origin xyz="-2.48 -0.02 1.56" rpy="0.002207 -0.01489 0.01145"/>
+	</HDL-64E_S2 > -->
+
+	<!-- front mounted -->
+	<xacro:fixed_part name="vlp16_rig" parent="base_link" linktype="fixed" rpy="0 2.8 3.2" xyz="-1.1 0.1 1.4" />
+	<!-- back mounted -->
+	<!-- <xacro:fixed_part name="vlp16_rig" parent="base_link" linktype="fixed" rpy="0.08 1.96 0.13" xyz="-3.6 0 0.9" /> -->
+
+	<!-- <xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro" /> -->
+	<!-- <VLP-16 parent="vlp16_rig" name="velodyne16_201" topic="/sensors/velodyne16_201_points">
+		<origin xyz="0 0.02 0" rpy="2.3 0 0" />
+	</VLP-16>
+	<xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro" />
+	<VLP-16 parent="vlp16_rig" name="velodyne16_202" topic="/sensors/velodyne16_202_points">
+		<origin xyz="0.015 0.02 -0.02" rpy="-2.24 -0.02 0.04" /> -->
+		<!-- <origin xyz="0 -0.02 0" rpy="-2.3 0.0 0" /> -->
+	<!-- </VLP-16> -->
+
+	<!-- SMS radar -->
+
+	<!-- Uncalibrated, just an initial guess. -->
+	<xacro:fixed_part name="sms_radar" parent="front_axle_center" linktype="fixed" rpy="${pi} 0 0" xyz="0.791 0 0" />
+
+	<!-- BroadR-Reach -->
+
+	<!-- Poorly calibrated. -->
+	<!--xacro:fixed_part name="broadrreachcam_front" parent="chassis" linktype="fixed" rpy="-1.5324488233886628 -0.09459886506518991 -1.6898854642573136" xyz="0.98 -0.0 0.52" /-->
+	<xacro:fixed_part name="broadrreachcam_front" parent="chassis" linktype="fixed" rpy="-1.56 0.0 -1.61" xyz="0.98 0.0 0.52" />
+	<xacro:fixed_part name="broadcam_front_position" parent="chassis" linktype="fixed" rpy="0.0 0.0 0.0" xyz="0.98 0.0 0.52" />
+
+	<!--xacro:fixed_part name="broadrreachcam_rear" parent="chassis" linktype="fixed" rpy="-1.6875481882071017 0.13115413982346918 1.6443386583760877" xyz="-3.739 0.0 0.84" /-->
+	<xacro:fixed_part name="broadrreachcam_rear" parent="chassis" linktype="fixed" rpy="-1.59 0.13 1.51" xyz="-3.739 0.0 0.84" />
+	<!--xacro:fixed_part name="broadrreachcam_right" parent="chassis" linktype="fixed" rpy="-2.4024635678176183 0.13558351288498463 2.293467708285649" xyz="-0.93783 -1.04453 0.91" /-->
+	<xacro:fixed_part name="broadrreachcam_right" parent="chassis" linktype="fixed" rpy="-2.435 0.215 2.735" xyz="-0.93783 -1.04453 0.91" />
+	<!--xacro:fixed_part name="broadrreachcam_left" parent="chassis" linktype="fixed" rpy="-2.3649720485347547 -0.044740394715440196 0.0749178716059171" xyz="-0.93783 1.04453 0.91" /-->
+	<xacro:fixed_part name="broadrreachcam_left" parent="chassis" linktype="fixed" rpy="-2.18 0.0 0.07" xyz="-0.93783 1.04453 0.91" />
+
+	<!-- Hella SWA radar reference frame -->
+
+	<!-- Uncalibrated, just an initial guess. -->
+	<xacro:fixed_part name="hella_swa_reference" parent="front_axle_center" linktype="fixed" rpy="0 0 0" xyz="0 0 0" />
+
+	<!-- AS Stereo front -->
+
+	<!-- Poorly calibrated. -->
+	<!--xacro:fixed_part name="box7_0_left" parent="base_link" linktype="fixed" rpy="-1.64872 -0.019101 -1.58032" xyz="1.52569 -0.0511414 1.60219" />
+	<xacro:fixed_part name="box7_0_right" parent="box7_0_left" linktype="fixed" rpy="0.003 0.001 0.003" xyz="0.145 0.003 0.002" />
+	<xacro:fixed_part name="box7_0_disparity" parent="box7_0_left" linktype="fixed" rpy="0 0 0" xyz="0 0 0" /-->
+
+	<xacro:fixed_part name="pg_left" parent="base_link" linktype="fixed" rpy="-1.08642 0.20036 -1.27089" xyz="-0.7 -0.45 1.1" />
+	<xacro:fixed_part name="pg_right" parent="base_link" linktype="fixed" rpy="-1.27559 0.188562 -1.94421" xyz="-0.85 -0.27 1.2" />
+
+</robot>
