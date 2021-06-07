@@ -14,7 +14,6 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <std_msgs/ColorRGBA.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
 
 #include "GraphSolver.h"
@@ -271,7 +270,6 @@ void publish_trajectory(double timestamp, Trajectory& trajectory) {
   new_marker.color.a = 1.0;
   new_marker.pose.orientation.w = 1.0;
 
-  visualization_msgs::MarkerArray marker_array;
   for (auto it = trajectory.begin(); it != trajectory.end(); ++it) {
     
     new_marker.header.stamp = ros::Time(it->first);
